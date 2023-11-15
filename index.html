@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+            integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
+            integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
+            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+            crossorigin="anonymous"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.2.0/firebase.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .buttons {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .buttons button {
+            margin-bottom: 20px;
+            border: none;
+            padding: 0.4rem 1.2rem;
+            background-color: red;
+            color: white;
+            border-radius: 5px;
+        }
+
+        #page-number {
+            margin-bottom: 20px;
+            border: none;
+            text-align: center;
+            width: 3rem;
+            border-radius: 5px;
+        }
+
+        .column {
+            width: 33.33%;
+
+            padding: 10px;
+        }
+
+        .card {
+            box-shadow: 10px 10px 2px 1px red;
+            background-color: aqua;
+            padding: 10px;
+            height: 250px;
+        }
+
+        img {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+        }
+    </style>
+    <script src="model/Song.js"></script>
+    <script src="fileBaseConfig.js"></script>
+
+
+
+</head>
+<body>
+
+<div class="input-group mb-3">
+
+    <div class="input-group-prepend">
+        <span class="input-group-text" id="basic-addon">@</span>
+    </div>
+    <input id="searchStudent" oninput="searchStudent()" type="text" class="form-control" placeholder="Username"
+           aria-label="Username"
+           aria-describedby="basic-addon1">
+</div>
+
+<progress value="0" max="100" id="uploader">0%</progress>
+<input onchange="validate()" type="file" value="Avatar" accept=".jpg" id="fileButton">
+<p id="validate_avatar" style="color: red"></p>
+<p id="validate" style="color: blue"></p>
+<img id="image" src="" alt="" style="display: none">
+
+<progress value="0" max="100" id="uploadMp3">0%</progress>
+<input onchange="validate()" type="file" value="Mp3" accept=".jpg" id="fileButtonMp3">
+<p id="validateMp3" style="color: red"></p>
+
+<audio controls id="showMp3" style="display: none">
+    <source src="" type="audio/ogg">
+
+</audio>
+
+<p id="validate_name" style="color: red"></p>
+<div class="input-group mb-3">
+    <div class="input-group-prepend">
+        <span class="input-group-text" id="basic-addon1">Name Song</span>
+    </div>
+    <input oninput="validate()" id="name" type="text" class="form-control" placeholder="Name Song"
+           aria-label="basic-addon1"
+           aria-describedby="basic-addon1">
+
+</div>
+<!--<div id="imgDiv"></div>-->
+
+<button id="btn_create" class="btn btn-primary" onclick="createStudent()" disabled>Create</button>
+<div class="container" style="background-color: aliceblue">
+    <div class="col-12" style="margin-top: 50px">
+        <div class="row" id="draw-page">
+
+        </div>
+
+        <div class="buttons">
+            <button onclick="previousPage()" id="prev">Prev</button>
+            <input type="text" id="page-number" readonly>
+            <button onclick="nextPage()" id="next">Next</button>
+        </div>
+
+    </div>
+</div>
+
+<script src="upload/upload.js"></script>
+<script src="uploadMp3.js"></script>
+<script>
+    let elementInPage = 6;
+    let start = 0;
+    let end = elementInPage;
+    let pageNumber = 1;
+    let id;
+    let avatar;
+    let name;
+    let mp3;
+    let validateMp3;
+    let nameUpdate;
+    let avatarUpdate;
+    let validate_avatar;
+    let validate_name;
+    let listStudent = localStorage.getItem('listStudent');
+    if (listStudent == null) {
+        listStudent = []
+    } else {
+        listStudent = JSON.parse(listStudent);
+    }
+    let idUpdate = 0;
+    let idDelete = 0;
+
+    // let results = [];
+
+    function validate() {
+        avatar = document.getElementById('fileButton').value;
+        name = document.getElementById('name').value;
+        mp3 = document.getElementById('fileButtonMp3').value;
+        validateMp3 = document.getElementById('validateMp3');
+        validate_avatar = document.getElementById('validate_avatar');
+        validate_name = document.getElementById('validate_name');
+        if (avatar === '') {
+            validate_avatar.innerHTML = 'please upload avatar'
+        } else {
+            validate_avatar.innerHTML = ''
+        }
+        if (mp3 === '') {
+            validateMp3.innerHTML = 'please upload Mp3'
+        } else {
+            validateMp3.innerHTML = ''
+        }
+        if (name.trim() === '') {
+            validate_name.innerHTML = 'the name is required'
+        } else {
+            validate_name.innerHTML = ''
+        }
+
+        if (validate_name.textContent === '' && validate_avatar.textContent === ''&& validateMp3.textContent ==='') {
+            document.getElementById('btn_create').disabled = false;
+
+        } else {
+            document.getElementById('btn_create').disabled = true;
+
+        }
+    }
+
+    function validateUpdate() {
+
+        avatarUpdate = document.getElementById('fileButtonUpdate').value;
+
+        nameUpdate = document.getElementById('name-update').value;
+
+
+
+        if (avatarUpdate !== null || nameUpdate !== null) {
+            document.getElementById('btn-edit').disabled = false;
+
+        } else {
+            document.getElementById('btn-edit').disabled = true;
+        }
+
+    }
+
+    function createStudent() {
+        if (listStudent.length === 0) {
+            id = 1;
+        } else {
+            id = listStudent[listStudent.length - 1].id + 1;
+        }
+        avatar = localStorage.getItem('avatar_student');
+        name = document.getElementById('name').value;
+        mp3 = localStorage.getItem('UpdateMp3');
+        let newSong = new Song(id, name, avatar,mp3);
+        listStudent.push(newSong);
+        localStorage.removeItem('listStudent');
+        localStorage.setItem('listStudent', JSON.stringify(listStudent));
+        localStorage.removeItem('avatar_student');
+        localStorage.removeItem('UpdateMp3');
+        document.getElementById('validate').innerHTML = 'Create Student Success!';
+        showPageStudent();
+    }
+
+    function nextPage() {
+        if (end < listStudent.length) {
+            start += elementInPage;
+            end += elementInPage;
+            pageNumber += 1
+        }
+        document.getElementById('page-number').value = pageNumber;
+        showPageStudent()
+    }
+
+    function previousPage() {
+        if (end <= elementInPage) {
+            start = 0;
+            end = elementInPage;
+        } else {
+            start -= elementInPage;
+            end -= elementInPage;
+            pageNumber -= 1
+        }
+        document.getElementById('page-number').value = pageNumber;
+        showPageStudent()
+    }
+function setIdSong(id) {
+    localStorage.setItem('idSong',id);
+}
+    function showPageStudent() {
+
+        const pageStudent = listStudent.slice(start, end).map((row) => {
+            return `
+
+            <div class="column">
+
+                <div class="card">
+                    <p>Số thứ tự ${row.id}</p>
+                    <a onclick="setIdSong(${row.id})" href="detailSong.html">
+                    <img src="${row.avatar}">
+
+                    <p style="color: blueviolet">${row.name}</p>
+                    </a>
+                    <div style="display: flex">
+                    <button class="btn btn-primary" onclick="showUpdate(${row.id})" style="width: 40px; margin-left: 10px" data-toggle="modal" data-target="#exampleModal" data-whatever=${row.name}><i class="bi bi-pen-fill"></i></button>
+                    <button class="btn btn-danger" onclick="showDelete(${row.id})" style="width: 40px; margin-left: 10px" data-toggle="modal" data-target="#staticBackdrop"><i class="bi bi-trash3-fill" ></i></button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">New message</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+             <div class="form-group">
+             <progress value="0" max="100" id="uploaderUpdate">0%</progress>
+                <input onchange="validateUpdate()" type="file" value="upload" accept=".jpg" id="fileButtonUpdate">
+                <p id="Updavalidate_avatar" style="color: red"></p>
+                <p id="validateUpdate" style="color: blue"></p>
+                        <img  id="avatarUpdate" style="display: none">
+                        <label class="col-form-label">avatar</label>
+                       <img id="new-avatar">
+             </div>
+
+                    <div class="form-group">
+                        <label class="col-form-label">Name</label>
+                        <p id="validate-name"></p>
+                        <input oninput="validateUpdate()" type="text" class="form-control" id="name-update">
+                    </div>
+
+                    <div class="form-group">
+                    <progress value="0" max="100" id="uploadMp3Update">0%</progress>
+                        <input onchange="validateUpdate()" type="file" value="Mp3" accept=".jpg" id="fileButtonMp3Update">
+                        <p id="validateMp3Update" style="color: red"></p>
+                        <audio controls id="showMp3Update" style="display: none">
+                            <source src="">
+                        </audio>
+                        <audio controls id="new-mp3">
+                            <source src="">
+                        </audio>
+                    </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button id="btn-edit" type="button" class="btn btn-primary" onclick="updateStudent()" data-dismiss="modal" disabled>Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+            <div class="modal fade" id="staticBackdrop" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="staticBackdropLabel">Modal title</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+      Are you sure delete?
+      <h1 id="name-delete"></h1>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+        <button type="button" class="btn btn-primary" onclick="deleteStudent()" data-dismiss="modal">Ok</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+                  `
+        }).join('')
+
+        document.getElementById('page-number').value = pageNumber;
+        document.getElementById('draw-page').innerHTML = pageStudent;
+    }
+
+    showPageStudent();
+
+    function showUpdate(id) {
+        idUpdate = id;
+        for (let i = 0; i < listStudent.length; i++) {
+            if (id === listStudent[i].id) {
+                document.getElementById('name-update').value = listStudent[i].name;
+                document.getElementById('new-avatar').src = listStudent[i].avatar;
+                document.getElementById('new-mp3').src = listStudent[i].mp3;
+            }
+        }
+    }
+
+    function showDelete(id) {
+        idDelete = id;
+
+        for (let i = 0; i < listStudent.length; i++) {
+            if (id === listStudent[i].id) {
+                document.getElementById('name-delete').innerText = listStudent[i].name;
+
+            }
+        }
+    }
+
+    function updateStudent() {
+        for (let i = 0; i < listStudent.length; i++) {
+            if (listStudent[i].id === idUpdate) {
+                if (localStorage.getItem('avatarUpdate') !==null){
+                    listStudent[i].avatar = localStorage.getItem('avatarUpdate');
+
+                }
+                if (localStorage.getItem('UpdateNewMp3') !==null){
+                    listStudent[i].mp3 = localStorage.getItem('UpdateNewMp3');
+
+                }
+                listStudent[i].name = document.getElementById('name-update').value;
+            }
+
+        }
+        localStorage.removeItem('avatarUpdate');
+        localStorage.removeItem('UpdateNewMp3');
+        localStorage.setItem('listStudent', JSON.stringify(listStudent));
+        showPageStudent();
+    }
+
+    function deleteStudent() {
+        for (let i = 0; i < listStudent.length; i++) {
+            if (listStudent[i].id === idDelete) {
+                listStudent.splice(i, 1);
+            }
+        }
+        localStorage.removeItem('listStudent');
+        localStorage.setItem('listStudent', JSON.stringify(listStudent));
+
+
+        showPageStudent();
+    }
+
+    function showListSearchStudent() {
+
+        for (let i = 0; i < results.length; i++) {
+            const pageStudent = results.slice(start, end).map((row) => {
+                return `
+             <div class="column">
+
+                <div class="card">
+                    <p>Số thứ tự ${row.id}</p>
+                    <a onclick="setIdSong(${row.id})" href="detailSong.html">
+                    <img src="${row.avatar}">
+
+                    <p style="color: blueviolet">${row.name}</p>
+                    </a>
+                    <div style="display: flex">
+                    <button class="btn btn-primary" onclick="showUpdate(${row.id})" style="width: 40px; margin-left: 10px" data-toggle="modal" data-target="#exampleModal" data-whatever=${row.name}><i class="bi bi-pen-fill"></i></button>
+                    <button class="btn btn-danger" onclick="showDelete(${row.id})" style="width: 40px; margin-left: 10px" data-toggle="modal" data-target="#staticBackdrop"><i class="bi bi-trash3-fill" ></i></button>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">New message</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+             <div class="form-group">
+
+
+             <progress value="0" max="100" id="uploaderUpdate">0%</progress>
+                <input onchange="validateUpdate()" type="file" value="upload" accept=".jpg" id="fileButtonUpdate">
+                <p id="Updavalidate_avatar" style="color: red"></p>
+                <p id="validateUpdate" style="color: blue"></p>
+                <img  id="avatarUpdate" style="display: none">
+
+
+                        <label class="col-form-label">avatar</label>
+                       <img id="new-avatar">
+                    </div>
+                    <div class="form-group">
+                        <label class="col-form-label">Name</label>
+                        <p id="validate-name"></p>
+                        <input oninput="validateUpdate()" type="text" class="form-control" id="name-update">
+                    </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button id="btn-edit" type="button" class="btn btn-primary" onclick="updateStudent()" data-dismiss="modal" disabled>Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+            <div class="modal fade" id="staticBackdrop" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="staticBackdropLabel">Modal title</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+      Are you sure delete?
+      <h1 id="name-delete"></h1>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+        <button type="button" class="btn btn-primary" onclick="deleteStudent()" data-dismiss="modal">Ok</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+                  `
+            }).join('')
+
+            document.getElementById('page-number').value = pageNumber;
+            document.getElementById('draw-page').innerHTML = pageStudent;
+        }
+    }
+    showPageStudent();
+    function searchStudent() {
+        let keyword = document.getElementById('searchStudent').value;
+        if (keyword.trim() === ''){
+            showPageStudent()
+        }else {
+            results = [];
+            for (let i = 0; i < listStudent.length; i++) {
+                if (listStudent[i].name.toLowerCase().search(keyword.toLowerCase()) != -1) {
+                    results.push(listStudent[i]);
+                    // console.log('students search ====', listStudent[i])
+                    // console.log('iiiii', i)
+                }
+            }
+            showListSearchStudent();
+        }
+    }
+
+    // var exampleModal = document.getElementById('exampleModal')
+    // if (exampleModal !== null) {
+    //     exampleModal.addEventListener('show.bs.modal', function (event) {
+    //         console.log('exampleModal', exampleModal)
+    //         // Button that triggered the modal
+    //         var button = event.relatedTarget
+    //         // Extract info from data-bs-* attributes
+    //         var recipient = button.getAttribute('data-bs-whatever')
+    //         // If necessary, you could initiate an AJAX request here
+    //         // and then do the updating in a callback.
+    //         //
+    //         // Update the modal's content.
+    //         var modalTitle = exampleModal.querySelector('.modal-title')
+    //         var modalBodyInput = exampleModal.querySelector('.modal-body input')
+    //         console.log('check data modal ====> ', recipient.name)
+    //         modalTitle.textContent = 'Update Song: ' + recipient
+    //         modalBodyInput.value = recipient
+    //     })
+    // }
+    // var staticBackdrop = document.getElementById('staticBackdrop')
+    // if (staticBackdrop !== null) {
+    //     staticBackdrop.addEventListener('show.bs.modal', function (event) {
+    //         console.log('staticBackdrop', staticBackdrop)
+    //         // Button that triggered the modal
+    //         var button = event.relatedTarget
+    //         // Extract info from data-bs-* attributes
+    //         var recipient = button.getAttribute('data-bs-whatever')
+    //         // If necessary, you could initiate an AJAX request here
+    //         // and then do the updating in a callback.
+    //         //
+    //         // Update the modal's content.
+    //         var modalTitle = staticBackdrop.querySelector('.modal-title')
+    //         var modalBodyInput = staticBackdrop.querySelector('.modal-body input')
+    //         console.log('check data modal ====> ', recipient.name)
+    //         modalTitle.textContent = 'Update Song: ' + recipient
+    //         modalBodyInput.value = recipient
+    //     })
+    // }
+    // console.log('exampleModal', exampleModal)
+</script>
+<script src="uploadAvatar.js"></script>
+<script src="mp3Update.js"></script>
+</body>
+</html>

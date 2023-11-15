@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>DetailSong</h1>
+<h2 id="name"></h2>
+<img id="avatar" src="" style="width: 100px;height: 100px"><br>
+<audio controls id="mp3">
+<source src="">
+</audio>
+<script>
+
+  let idSong= localStorage.getItem('idSong');
+  let listSong = JSON.parse(localStorage.getItem('listStudent'));
+  for (let i = 0; i < listSong.length; i++) {
+      if (listSong[i].id == idSong){
+          document.getElementById('name').innerText= listSong[i].name;
+          document.getElementById('avatar').src= listSong[i].avatar;
+          document.getElementById('mp3').src= listSong[i].mp3;
+      }
+  }
+</script>
+</body>
+</html>
